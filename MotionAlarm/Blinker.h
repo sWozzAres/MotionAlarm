@@ -9,10 +9,18 @@
 	#include "WProgram.h"
 #endif
 
+#include "Timing.h"
+
+struct BlinkPattern {
+    uint8_t StartState;
+    unsigned int Size;
+    unsigned long Durations[];
+};
+
 class Blinker {
 private:
-    const unsigned long* _durations{ nullptr };
-    unsigned int _count;
+    //const unsigned long* _durations{ nullptr };
+    const BlinkPattern* _pattern;
     int _index;
     unsigned long _startMs;
     unsigned long _durationMs;
@@ -22,19 +30,18 @@ private:
     bool _paused = false;
 public:
     Blinker() {}
-    void Begin(uint8_t pin, uint8_t startVal) {
+    void Begin(uint8_t pin) {
         _pin = pin;
-        _state = startVal;
         pinMode(_pin, OUTPUT);
     };
 
-    void Start(const unsigned long* durations, unsigned int count, unsigned int speedPercent = 100) {
-        _durations = durations;
-        _count = count;
+    void Start(const BlinkPattern* pattern, unsigned long startTimeMs, unsigned int speedPercent = 100) {
+        _pattern = pattern;
         _speedMultiplier = 100.0 / speedPercent;
-        _index = -1;
-        _startMs = 0;
-        _durationMs = 0;
+        _index = 0;
+        _startMs = startTimeMs;
+        _durationMs = pattern->Durations[0] * _speedMultiplier;
+        _state = pattern->StartState;
         digitalWrite(_pin, _state);
         _paused = false;
     }
@@ -44,7 +51,7 @@ public:
         _paused = true;
     }
     void Resume() {
-        if (_durations != nullptr)
+        if (_pattern != nullptr)
             _paused = false;
     }
 
@@ -53,21 +60,15 @@ public:
             return;
 
         if (ElapsedMs(_startMs, frameTimeMs) >= _durationMs) {
-            if (++_index == _count)
+            if (++_index == _pattern->Size)
                 _index = 0;
 
             _state = _state == HIGH ? LOW : HIGH;
             digitalWrite(_pin, _state);
 
-            _durationMs = _durations[_index] * _speedMultiplier;
+            _durationMs = _pattern->Durations[_index] * _speedMultiplier;
             _startMs = frameTimeMs;
         }
-    }
-private:
-    // Returns the elapsed time between 'start' and 'end' with handling of overflow.
-    inline unsigned long ElapsedMs(unsigned long start, unsigned long end) const {
-        auto diff = end - start;
-        return diff >= 0 ? diff : (0xffffffff - start) + end;
     }
 };
 #endif

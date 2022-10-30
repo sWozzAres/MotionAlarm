@@ -9,6 +9,8 @@
 	#include "WProgram.h"
 #endif
 
+#include "Timing.h"
+
 enum class ButtonState {
     Pressed,
     Released
@@ -70,12 +72,6 @@ public:
     }
     inline unsigned long LastChangedMs() const {
         return _lastChangeMs;
-    }
-private:
-    // Returns the elapsed time between 'start' and 'end' with handling of overflow.
-    inline unsigned long ElapsedMs(unsigned long start, unsigned long end) const {
-        auto diff = end - start;
-        return diff >= 0 ? diff : (0xffffffff - start) + end;
     }
 };
 #endif

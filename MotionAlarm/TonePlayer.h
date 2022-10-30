@@ -9,6 +9,8 @@
 	#include "WProgram.h"
 #endif
 
+#include "Timing.h"
+
 struct Tone {
     unsigned int Frequency;
     unsigned long Duration;
@@ -75,12 +77,6 @@ public:
     }
     bool IsPlaying() const {
         return _isPlaying;
-    }
-private:
-    // Returns the elapsed time between 'start' and 'end' with handling of overflow.
-    inline unsigned long ElapsedMs(unsigned long start, unsigned long end) const {
-        auto diff = end - start;
-        return diff >= 0 ? diff : (0xffffffff - start) + end;
     }
 };
 #endif

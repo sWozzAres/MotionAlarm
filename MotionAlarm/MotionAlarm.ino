@@ -1,6 +1,7 @@
 //#define DEBUG
 
 //#include "LowPower.h"
+#include "Timing.h"
 #include "Config.h"
 #include "TonePlayer.h"
 #include "Blinker.h"
@@ -60,7 +61,10 @@ constexpr Alarm Alarms[] = {
   { Alarm6, sizeof(Alarm6) / sizeof(Tone) },
 };
 
-constexpr unsigned long BlinkPattern[] = { 200, 100, 200, 800 };
+const BlinkPattern BlinkP =
+{
+	HIGH, 4, { 200, 100, 200, 800 }
+};
 
 struct MorseCode {
 	char Letter;
@@ -111,7 +115,7 @@ RgbLed led{};
 Blinker blinker{};
 TonePlayer tonePlayer{};
 Button button{};
-Config config{};
+Config configuration{};
 
 bool alarm{ false };
 
@@ -140,16 +144,16 @@ void pirStatusChanged() {
 }
 
 void setup() {
-	config.Load();
-	if (config.CurrentAlarm() > sizeof(Alarms) / sizeof(Alarm))
-		config.SetCurrentAlarm(0);
+	configuration.Load();
+	if (configuration.CurrentAlarm > sizeof(Alarms) / sizeof(Alarm))
+		configuration.CurrentAlarm = 0;
 
 	tonePlayer.Begin(PIN_ALARM);
-	blinker.Begin(LED_BUILTIN, LOW);
+	blinker.Begin(LED_BUILTIN);
 	led.Begin(PIN_RED, PIN_GREEN, PIN_BLUE);
 	button.Begin(PIN_TESTBUTTON);
 
-	blinker.Start(BlinkPattern, sizeof(BlinkPattern) / sizeof(unsigned long));
+	blinker.Start(&BlinkP, millis());
 
 	attachInterrupt(digitalPinToInterrupt(PIN_TESTBUTTON), testButtonChanged, CHANGE);
 
@@ -160,7 +164,7 @@ void setup() {
 }
 
 void handleButtonInput(unsigned long frameTimeMs, void (*inputHandler)(const String&)) {
-	static ButtonState lastButtonState{ ButtonState::Released };
+	static ButtonState lastKnownState{ ButtonState::Released };
 	static String code{};
 
 	if (code.length() > 0 && button.State() == ButtonState::Released && frameTimeMs - button.LastChangedMs() > 500) {
@@ -168,19 +172,14 @@ void handleButtonInput(unsigned long frameTimeMs, void (*inputHandler)(const Str
 		code = "";
 	}
 
-	if (button.State() != lastButtonState) {
-
-		unsigned long duration;
-
+	if (button.State() != lastKnownState) {
 		if (button.State() == ButtonState::Pressed) {
-			duration = button.LastReleasedMs();
-
 			digitalWrite(PIN_MORSE_BUZZER, HIGH);
 		}
 		else {
-			duration = button.LastPressedMs();
 			digitalWrite(PIN_MORSE_BUZZER, LOW);
 
+			auto duration = button.LastPressedMs();
 			if (duration < 120) {
 				code += ".";
 			}
@@ -188,7 +187,8 @@ void handleButtonInput(unsigned long frameTimeMs, void (*inputHandler)(const Str
 				code += "-";
 			}
 		}
-		lastButtonState = button.State();
+
+		lastKnownState = button.State();
 	}
 }
 
@@ -228,7 +228,9 @@ void handleMorseLetter(char letter) {
 }
 
 void changeAlarm(int index) {
-	config.SetCurrentAlarm(index);
+	configuration.CurrentAlarm = index;
+	configuration.Save();
+
 	tonePlayer.Play(Alarms[index].Tones, Alarms[index].Size, true);
 }
 
@@ -249,11 +251,11 @@ void loop() {
 		motionDetectEnded = false;
 	}
 
-	if (motionDetectedMs > 0 && frameTimeMs - motionDetectedMs > 10000) {
+	if (motionDetectedMs > 0 && ElapsedMs(motionDetectedMs, frameTimeMs) > 10000) {
 		if (!alarm) {
 			led.ChangeFlashColour(RgbColour::Red);
 			if (!tonePlayer.IsPlaying())
-				tonePlayer.Play(Alarms[config.CurrentAlarm()].Tones, Alarms[config.CurrentAlarm()].Size, true);
+				tonePlayer.Play(Alarms[configuration.CurrentAlarm].Tones, Alarms[configuration.CurrentAlarm].Size, true);
 			alarm = true;
 		}
 	}
