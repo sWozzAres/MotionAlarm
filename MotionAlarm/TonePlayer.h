@@ -54,7 +54,7 @@ public:
         if (!_isPlaying)
             return;
 
-        if (ElapsedMs(_startMs, frameTimeMs) >= _durationMs) {
+        if (elapsedMs(_startMs, frameTimeMs) >= _durationMs) {
             if (++_index == _count) {
                 if (_repeat)
                     _index = -1;

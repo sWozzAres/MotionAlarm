@@ -251,7 +251,7 @@ void loop() {
 		motionDetectEnded = false;
 	}
 
-	if (motionDetectedMs > 0 && ElapsedMs(motionDetectedMs, frameTimeMs) > 10000) {
+	if (motionDetectedMs > 0 && elapsedMs(motionDetectedMs, frameTimeMs) > 10000) {
 		if (!alarm) {
 			led.ChangeFlashColour(RgbColour::Red);
 			if (!tonePlayer.IsPlaying())

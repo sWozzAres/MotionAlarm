@@ -42,14 +42,14 @@ public:
         _state = (_state << 1) | digitalRead(_pin) | 0xfe00;
         switch (_state & 0xff) {
         case 0xff:
-            if (_buttonState != ButtonState::Pressed && ElapsedMs(_lastChangeMs, frameTimeMs) > MIN_DETECT_MS) {
+            if (_buttonState != ButtonState::Pressed && elapsedMs(_lastChangeMs, frameTimeMs) > MIN_DETECT_MS) {
                 _buttonState = ButtonState::Pressed;
                 _buttonPressedMs = frameTimeMs;
                 _lastChangeMs = _buttonPressedMs;
             }
             break;
         case 0x00:
-            if (_buttonState != ButtonState::Released && ElapsedMs(_lastChangeMs, frameTimeMs) > MIN_DETECT_MS) {
+            if (_buttonState != ButtonState::Released && elapsedMs(_lastChangeMs, frameTimeMs) > MIN_DETECT_MS) {
                 _buttonState = ButtonState::Released;
                 _buttonReleasedMs = frameTimeMs;
                 _lastChangeMs = _buttonReleasedMs;

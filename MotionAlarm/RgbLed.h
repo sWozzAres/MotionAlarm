@@ -67,7 +67,7 @@ public:
         constexpr int CYCLETIME = 1000;
         constexpr double HALFCYCLE = CYCLETIME / 2.0;
 
-        auto cycleMs = ElapsedMs(_flashStartMs, frameTimeMs) % CYCLETIME;
+        auto cycleMs = elapsedMs(_flashStartMs, frameTimeMs) % CYCLETIME;
         auto colourValue = (cycleMs / HALFCYCLE) * 256.0;
         if (cycleMs > HALFCYCLE)
             colourValue = 512 - colourValue;

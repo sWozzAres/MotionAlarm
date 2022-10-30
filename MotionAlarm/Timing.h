@@ -10,7 +10,7 @@
 #endif
 
 // Returns the elapsed time between 'start' and 'end' with handling of overflow.
-inline unsigned long ElapsedMs(unsigned long start, unsigned long end) {
+inline unsigned long elapsedMs(unsigned long start, unsigned long end) {
     auto diff = end - start;
     return diff >= 0 ? diff : (0xffffffff - start) + end;
 }

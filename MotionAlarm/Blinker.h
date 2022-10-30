@@ -19,7 +19,6 @@ struct BlinkPattern {
 
 class Blinker {
 private:
-    //const unsigned long* _durations{ nullptr };
     const BlinkPattern* _pattern;
     int _index;
     unsigned long _startMs;
@@ -59,7 +58,7 @@ public:
         if (_paused) 
             return;
 
-        if (ElapsedMs(_startMs, frameTimeMs) >= _durationMs) {
+        if (elapsedMs(_startMs, frameTimeMs) >= _durationMs) {
             if (++_index == _pattern->Size)
                 _index = 0;
 
