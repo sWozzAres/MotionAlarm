@@ -14,7 +14,6 @@
 constexpr int EEPROM_CURRENT_ALARM = 0;
 
 struct Config {
-public:
 	int CurrentAlarm{0};
 
 	void Load() {

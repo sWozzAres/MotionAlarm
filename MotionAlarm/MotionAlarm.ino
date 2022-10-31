@@ -61,7 +61,7 @@ constexpr Alarm Alarms[] = {
   { Alarm6, sizeof(Alarm6) / sizeof(Tone) },
 };
 
-const BlinkPattern BlinkP =
+const BlinkPattern Blink1 =
 {
 	HIGH, 4, { 200, 100, 200, 800 }
 };
@@ -132,7 +132,7 @@ volatile unsigned long motionDetectedMs{ 0 };
 
 void pirStatusChanged() {
 	lastInterruptMs = millis();
-	
+
 	if (digitalRead(PIN_PIR) == HIGH) {
 		motionDetectStarted = true;
 		motionDetectedMs = millis();
@@ -148,12 +148,12 @@ void setup() {
 	if (configuration.CurrentAlarm > sizeof(Alarms) / sizeof(Alarm))
 		configuration.CurrentAlarm = 0;
 
-	tonePlayer.Begin(PIN_ALARM);
-	blinker.Begin(LED_BUILTIN);
-	led.Begin(PIN_RED, PIN_GREEN, PIN_BLUE);
-	button.Begin(PIN_TESTBUTTON);
+	tonePlayer.Initialize(PIN_ALARM);
+	blinker.Initialize(LED_BUILTIN);
+	led.Initialize(PIN_RED, PIN_GREEN, PIN_BLUE);
+	button.Initialize(PIN_TESTBUTTON);
 
-	blinker.Start(&BlinkP, millis());
+	blinker.Start(&Blink1);
 
 	attachInterrupt(digitalPinToInterrupt(PIN_TESTBUTTON), testButtonChanged, CHANGE);
 
@@ -163,13 +163,24 @@ void setup() {
 	pinMode(PIN_MORSE_BUZZER, OUTPUT);
 }
 
-void handleButtonInput(unsigned long frameTimeMs, void (*inputHandler)(const String&)) {
+void handleButtonInput(unsigned long frameTimeMs) {
 	static ButtonState lastKnownState{ ButtonState::Released };
-	static String code{};
+	static String morse{};
+	static String word{};
 
-	if (code.length() > 0 && button.State() == ButtonState::Released && frameTimeMs - button.LastChangedMs() > 500) {
-		inputHandler(code);
-		code = "";
+	if (button.State() == ButtonState::Released) {
+		auto duration = elapsedMs(button.LastChangedMs(), frameTimeMs);
+		
+		if (word.length() > 0 && duration > 500) {
+			handleCommand(word);
+			word = "";
+		}
+		else if (morse.length() > 0 && duration > 250) {
+			if (auto ch = lookupMorseCode(morse); ch != 0) {
+				word += ch;
+			}
+			morse = "";
+		}
 	}
 
 	if (button.State() != lastKnownState) {
@@ -181,10 +192,10 @@ void handleButtonInput(unsigned long frameTimeMs, void (*inputHandler)(const Str
 
 			auto duration = button.LastPressedMs();
 			if (duration < 120) {
-				code += ".";
+				morse += ".";
 			}
 			else {
-				code += "-";
+				morse += "-";
 			}
 		}
 
@@ -192,39 +203,13 @@ void handleButtonInput(unsigned long frameTimeMs, void (*inputHandler)(const Str
 	}
 }
 
-void inputHandler(const String& code) {
+char lookupMorseCode(const String& code) {
 	for (int i = 0; i < sizeof(MorseCodeTable) / sizeof(MorseCode); i++) {
 		if (code == MorseCodeTable[i].Code) {
-			handleMorseLetter(MorseCodeTable[i].Letter);
-			return;
+			return MorseCodeTable[i].Letter;
 		}
 	}
-}
-
-void handleMorseLetter(char letter) {
-	switch (letter) {
-	case '1':
-		changeAlarm(0);
-		break;
-	case '2':
-		changeAlarm(1);
-		break;
-	case '3':
-		changeAlarm(2);
-		break;
-	case '4':
-		changeAlarm(3);
-		break;
-	case '5':
-		changeAlarm(4);
-		break;
-	case '6':
-		changeAlarm(5);
-		break;
-	case 'E':
-		tonePlayer.Stop();
-		break;
-	}
+	return 0;
 }
 
 void changeAlarm(int index) {
@@ -234,16 +219,33 @@ void changeAlarm(int index) {
 	tonePlayer.Play(Alarms[index].Tones, Alarms[index].Size, true);
 }
 
+void handleCommand(const String& command) {
+	if (command == "1")
+		changeAlarm(0);
+	else if (command == "2")
+		changeAlarm(1);
+	else if (command == "3")
+		changeAlarm(2);
+	else if (command == "4")
+		changeAlarm(3);
+	else if (command == "5")
+		changeAlarm(4);
+	else if (command == "6")
+		changeAlarm(5);
+	else if (command == "E")
+		tonePlayer.Stop();
+}
+
 void loop() {
 	auto frameTimeMs{ millis() };
 
 	blinker.Update(frameTimeMs);
 
 	button.Update(frameTimeMs);
-	handleButtonInput(frameTimeMs, inputHandler);
+	handleButtonInput(frameTimeMs);
 
 	if (motionDetectStarted) {
-		led.StartFlashing(RgbColour::Blue);
+		led.StartFlashing(RgbColour::Blue, frameTimeMs);
 		motionDetectStarted = false;
 	}
 	if (motionDetectEnded) {

@@ -31,7 +31,7 @@ private:
 
 public:
     RgbLed() {}
-    void Begin(uint8_t redPin, uint8_t greenPin, uint8_t bluePin) {
+    void Initialize(uint8_t redPin, uint8_t greenPin, uint8_t bluePin) {
         _redPin = redPin;
         _greenPin = greenPin;
         _bluePin = bluePin;
@@ -46,10 +46,10 @@ public:
         _flashPin = PinFromColour(colour);
     }
 
-    void StartFlashing(RgbColour colour) {
+    void StartFlashing(RgbColour colour, unsigned long frameTimeMs) {
         ChangeColour(255, 255, 255);
         _flashPin = PinFromColour(colour);
-        _flashStartMs = millis();
+        _flashStartMs = frameTimeMs;
         _flashing = true;
     }
 
@@ -67,12 +67,16 @@ public:
         constexpr int CYCLETIME = 1000;
         constexpr double HALFCYCLE = CYCLETIME / 2.0;
 
-        auto cycleMs = elapsedMs(_flashStartMs, frameTimeMs) % CYCLETIME;
+        auto cycleMs = elapsedMs(_flashStartMs, frameTimeMs) % CYCLETIME; // 0 - 999
+
         auto colourValue = (cycleMs / HALFCYCLE) * 256.0;
         if (cycleMs > HALFCYCLE)
             colourValue = 512 - colourValue;
-
         analogWrite(_flashPin, 255 - max(min(colourValue, 255), 0));
+
+        /*constexpr double ratio = 256 / HALFCYCLE;
+        uint8_t colourValue = cycleMs < HALFCYCLE ? cycleMs * ratio : (CYCLETIME - 1 - cycleMs) * ratio;
+        analogWrite(_flashPin, 255 - colourValue);*/
     }
 private:
     uint8_t PinFromColour(RgbColour colour) {

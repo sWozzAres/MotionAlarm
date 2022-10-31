@@ -27,7 +27,7 @@ private:
     unsigned long _lastChangeMs{ 0 };
 public:
     Button() {}
-    void Begin(uint8_t pin) {
+    void Initialize(uint8_t pin) {
         _pin = pin;
         pinMode(_pin, INPUT);
     }

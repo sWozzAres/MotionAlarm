@@ -29,12 +29,12 @@ private:
     bool _paused = false;
 public:
     Blinker() {}
-    void Begin(uint8_t pin) {
+    void Initialize(uint8_t pin) {
         _pin = pin;
         pinMode(_pin, OUTPUT);
     };
 
-    void Start(const BlinkPattern* pattern, unsigned long startTimeMs, unsigned int speedPercent = 100) {
+    void Start(const BlinkPattern* pattern, unsigned long startTimeMs = millis(), unsigned int speedPercent = 100) {
         _pattern = pattern;
         _speedMultiplier = 100.0 / speedPercent;
         _index = 0;

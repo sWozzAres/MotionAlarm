@@ -29,7 +29,7 @@ private:
     bool _repeat;
 public:
     TonePlayer() {}
-    void Begin(uint8_t pin) {
+    void Initialize(uint8_t pin) {
         _pin = pin;
         pinMode(_pin, OUTPUT);
     };
