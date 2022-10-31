@@ -12,10 +12,9 @@
 #include "Timing.h"
 
 enum class ButtonState {
-    Pressed,
-    Released
+    Released = 0,
+    Pressed = 1,
 };
-
 
 class Button {
 private:

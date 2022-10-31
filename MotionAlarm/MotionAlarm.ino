@@ -74,7 +74,7 @@ struct MorseCode {
 constexpr MorseCode MorseCodeTable[]{
 	{'A', ".-" },
 	{'B', "-..." },
-	{'C', "-,-,"},
+	{'C', "-.-."},
 	{'D', "-.."},
 	{'E', "."},
 	{'F', "..-."},
@@ -82,7 +82,7 @@ constexpr MorseCode MorseCodeTable[]{
 	{'H', "...."},
 	{'I',".."},
 	{'J',".---"},
-	{'K',"-.-."},
+	{'K',"-.-"},
 	{'L',".-.."},
 	{'M',"--"},
 	{'N',"-."},
@@ -163,19 +163,97 @@ void setup() {
 	pinMode(PIN_MORSE_BUZZER, OUTPUT);
 }
 
+struct ButtonPress {
+	ButtonState State;
+	unsigned int Duration;
+};
+
+//void handleButtonInput2(unsigned long frameTimeMs) {
+//	constexpr int BUFFER_SIZE = 100;
+//	static ButtonPress inputBuffer[BUFFER_SIZE];
+//	static int bufferIndex = 0;
+//
+//	static ButtonState lastKnownState{ ButtonState::Released };
+//	static String morse{};
+//	static String word{};
+//
+//	if (bufferIndex > 0 && button.State() == ButtonState::Released && elapsedMs(button.LastChangedMs(), frameTimeMs) > 1000) {
+//		
+//		// get minimum press duration
+//		unsigned int dotDuration = 0xffff;
+//		for (int i = 0; i < bufferIndex; i++) {
+//			ButtonPress& bp = inputBuffer[i];
+//			if (bp.State == ButtonState::Pressed && bp.Duration < dotDuration)
+//				dotDuration = bp.Duration;
+//		}
+//		
+//		unsigned int dashDuration = dotDuration * 3;
+//		unsigned int wordSeperatorDuration = dotDuration * 7;
+//
+//		morse = "";
+//		word = "";
+//		for (int i = 0; i < bufferIndex; i++) {
+//			ButtonPress& bp = inputBuffer[i];
+//			word += "[";
+//			word += bp.Duration;
+//			word += "] ";
+//
+//			switch (bp.State) {
+//			case ButtonState::Pressed:
+//				if (bp.Duration < dashDuration)
+//					morse += ".";
+//				else
+//					morse += "-";
+//				break;
+//			case ButtonState::Released:
+//				if (bp.Duration >= dashDuration)
+//					morse += " ";
+//				break;
+//			}
+//		}
+//
+//		bufferIndex = 0;
+//	}
+//
+//	if (button.State() != lastKnownState) {
+//		if (bufferIndex < BUFFER_SIZE)
+//		{
+//			ButtonPress& entry = inputBuffer[bufferIndex++];
+//
+//			
+//
+//			if (button.State() == ButtonState::Pressed) {
+//				digitalWrite(PIN_MORSE_BUZZER, HIGH);
+//				entry.State = ButtonState::Released;
+//				entry.Duration = button.LastReleasedMs();
+//			}
+//			else {
+//				digitalWrite(PIN_MORSE_BUZZER, LOW);
+//				entry.State = ButtonState::Pressed;
+//				entry.Duration = button.LastPressedMs();
+//			}
+//		}
+//		lastKnownState = button.State();
+//	}
+//}
+
 void handleButtonInput(unsigned long frameTimeMs) {
 	static ButtonState lastKnownState{ ButtonState::Released };
 	static String morse{};
 	static String word{};
 
+	static unsigned int dotDuration = 40;
+	static unsigned int dashDuration = dotDuration * 3;
+	static unsigned int wordSeperatorDuration = dotDuration * 7;
+
 	if (button.State() == ButtonState::Released) {
 		auto duration = elapsedMs(button.LastChangedMs(), frameTimeMs);
 		
-		if (word.length() > 0 && duration > 500) {
+		if (word.length() > 0 && duration > wordSeperatorDuration) {
 			handleCommand(word);
 			word = "";
 		}
-		else if (morse.length() > 0 && duration > 250) {
+		else if (morse.length() > 0 && duration > dashDuration) {
 			if (auto ch = lookupMorseCode(morse); ch != 0) {
 				word += ch;
 			}
@@ -191,8 +269,15 @@ void handleButtonInput(unsigned long frameTimeMs) {
 			digitalWrite(PIN_MORSE_BUZZER, LOW);
 
 			auto duration = button.LastPressedMs();
-			if (duration < 120) {
+			if (duration <= dashDuration) {
 				morse += ".";
+
+				//if (duration < dotDuration) {
+				//	// recalculate
+				//	dotDuration = duration;
+				//	dashDuration = dotDuration * 3;
+				//	wordSeperatorDuration = dotDuration * 7;
+				//}
 			}
 			else {
 				morse += "-";
