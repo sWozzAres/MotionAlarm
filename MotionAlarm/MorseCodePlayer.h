@@ -9,6 +9,7 @@
 	#include "WProgram.h"
 #endif
 
+#include "Timing.h"
 #include "MorseCode.h"
 
 class MorseCodePlayer {
@@ -36,11 +37,11 @@ public:
 
 	void Update(unsigned long frameTimeMs) {
 
-		static unsigned long durations[10];
+		static unsigned long durations[20];
 		static int size{ 0 };
 		static int durationIndex = { size + 1 };
 
-		if (frameTimeMs - startMs >= durationMs) {
+		if (elapsedMs(startMs, frameTimeMs) >= durationMs) {
 			
 			startMs = frameTimeMs;
 
@@ -72,15 +73,14 @@ public:
 					durationIndex = 0;
 
 					// letter space
-					durations[++size] = DOT_DURATION * 3;
+					durations[++size] = 1500; // DOT_DURATION * 3;
 				}
 			}
 
 			durationMs = durations[durationIndex++];
 
-			//std::cout << durations[durationIndex++] << '\t' << on << '\n';
 			if (on)
-				tone(_pin, 550);// , durations[durationIndex++]);
+				tone(_pin, 550);
 			else
 				noTone(_pin);
 
