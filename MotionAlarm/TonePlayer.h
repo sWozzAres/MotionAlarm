@@ -14,6 +14,7 @@
 struct Tone {
     unsigned int Frequency;
     unsigned long Duration;
+    
 };
 
 class TonePlayer {

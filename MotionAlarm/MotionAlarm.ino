@@ -1,12 +1,13 @@
-//#define DEBUG
-
 //#include "LowPower.h"
+#include "MorseCodePlayer.h"
 #include "Timing.h"
 #include "Config.h"
 #include "TonePlayer.h"
 #include "Blinker.h"
 #include "RgbLed.h"
 #include "Button.h"
+#include "MorseCode.h"
+#include "MorseCodePlayer.h"
 
 constexpr uint8_t PIN_TESTBUTTON{ 2 };
 constexpr uint8_t PIN_PIR{ 3 };
@@ -66,56 +67,12 @@ const BlinkPattern Blink1 =
 	HIGH, 4, { 200, 100, 200, 800 }
 };
 
-struct MorseCode {
-	char Letter;
-	char* Code;
-};
-
-constexpr MorseCode MorseCodeTable[]{
-	{'A', ".-" },
-	{'B', "-..." },
-	{'C', "-.-."},
-	{'D', "-.."},
-	{'E', "."},
-	{'F', "..-."},
-	{'G', "--." },
-	{'H', "...."},
-	{'I',".."},
-	{'J',".---"},
-	{'K',"-.-"},
-	{'L',".-.."},
-	{'M',"--"},
-	{'N',"-."},
-	{'O',"---"},
-	{'P',".--."},
-	{'Q',"--.-"},
-	{'R',".-."},
-	{'S',"..."},
-	{'T',"-"},
-	{'U',"..-"},
-	{'V',"...-"},
-	{'W',".--"},
-	{'X',"-..-"},
-	{'Y',"-.--"},
-	{'Z',"--.."},
-
-	{'1',".----"},
-	{'2',"..---"},
-	{'3',"...--"},
-	{'4',"....-"},
-	{'5',"....."},
-	{'6',"-...."},
-	{'7',"--..."},
-	{'8',"---.."},
-	{'9',"----."},
-	{'0',"-----"}
-};
-
 RgbLed led{};
 Blinker blinker{};
 TonePlayer tonePlayer{};
 Button button{};
 Config configuration{};
+MorseCodePlayer morsePlayer{};
 
 bool alarm{ false };
 
@@ -152,7 +109,9 @@ void setup() {
 	blinker.Initialize(LED_BUILTIN);
 	led.Initialize(PIN_RED, PIN_GREEN, PIN_BLUE);
 	button.Initialize(PIN_TESTBUTTON);
-
+	morsePlayer.Initialize(PIN_ALARM);
+	
+	
 	blinker.Start(&Blink1);
 
 	attachInterrupt(digitalPinToInterrupt(PIN_TESTBUTTON), testButtonChanged, CHANGE);
@@ -161,6 +120,8 @@ void setup() {
 	attachInterrupt(digitalPinToInterrupt(PIN_PIR), pirStatusChanged, CHANGE);
 
 	pinMode(PIN_MORSE_BUZZER, OUTPUT);
+	morsePlayer.Play("MARK");
+	//morsePlayer.Play("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
 }
 
 struct ButtonPress {
@@ -242,9 +203,9 @@ void handleButtonInput(unsigned long frameTimeMs) {
 	static String morse{};
 	static String word{};
 
-	static unsigned int dotDuration = 40;
-	static unsigned int dashDuration = dotDuration * 3;
-	static unsigned int wordSeperatorDuration = dotDuration * 7;
+	constexpr unsigned int dotDuration = 60;
+	constexpr unsigned int dashDuration = dotDuration * 3;
+	constexpr unsigned int wordSeperatorDuration = dotDuration * 7;
 
 	if (button.State() == ButtonState::Released) {
 		auto duration = elapsedMs(button.LastChangedMs(), frameTimeMs);
@@ -254,7 +215,7 @@ void handleButtonInput(unsigned long frameTimeMs) {
 			word = "";
 		}
 		else if (morse.length() > 0 && duration > dashDuration) {
-			if (auto ch = lookupMorseCode(morse); ch != 0) {
+			if (auto ch = letterFromMorseCode(morse); ch != 0) {
 				word += ch;
 			}
 			morse = "";
@@ -288,15 +249,6 @@ void handleButtonInput(unsigned long frameTimeMs) {
 	}
 }
 
-char lookupMorseCode(const String& code) {
-	for (int i = 0; i < sizeof(MorseCodeTable) / sizeof(MorseCode); i++) {
-		if (code == MorseCodeTable[i].Code) {
-			return MorseCodeTable[i].Letter;
-		}
-	}
-	return 0;
-}
-
 void changeAlarm(int index) {
 	configuration.CurrentAlarm = index;
 	configuration.Save();
@@ -319,6 +271,8 @@ void handleCommand(const String& command) {
 		changeAlarm(5);
 	else if (command == "E")
 		tonePlayer.Stop();
+	else if (command == "A")
+		morsePlayer.Play("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
 }
 
 void loop() {
@@ -351,4 +305,5 @@ void loop() {
 
 	led.Update(frameTimeMs);
 	tonePlayer.Update(frameTimeMs);
+	morsePlayer.Update(frameTimeMs);
 }
