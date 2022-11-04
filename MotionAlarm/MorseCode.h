@@ -12,7 +12,7 @@
 #include "WString.h"
 
 struct MorseCode {
-	char Letter;
+	const char Letter;
 	const char* Code;
 };
 

@@ -21,11 +21,14 @@ private:
 	bool on{ true };
 	const unsigned long DOT_DURATION = 60;
 	uint8_t _pin;
+	bool isPlaying{ false };
 public:
 	void Initialize(uint8_t pin) {
 		_pin = pin;
 		pinMode(_pin, OUTPUT);
 	};
+
+	bool IsPlaying() const { return isPlaying; }
 
 	void Play(const char* message) {
 		str = message;
@@ -33,20 +36,21 @@ public:
 		startMs = 0;
 		durationMs = 0;
 		on = true;
+		isPlaying = true;
 	}
 
 	void Update(unsigned long frameTimeMs) {
+		if (!isPlaying)
+			return;
 
 		static unsigned long durations[20];
 		static int size{ 0 };
 		static int durationIndex = { size + 1 };
 
 		if (elapsedMs(startMs, frameTimeMs) >= durationMs) {
-			
-			startMs = frameTimeMs;
-
 			if (durationIndex > size) {
 				if (*strPtr == '\0') {
+					isPlaying = false;
 					return;
 				}
 				else {
@@ -73,10 +77,11 @@ public:
 					durationIndex = 0;
 
 					// letter space
-					durations[++size] = 1500; // DOT_DURATION * 3;
+					durations[++size] = DOT_DURATION * 3;
 				}
 			}
 
+			startMs = frameTimeMs;
 			durationMs = durations[durationIndex++];
 
 			if (on)

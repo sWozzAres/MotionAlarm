@@ -120,7 +120,7 @@ void setup() {
 	attachInterrupt(digitalPinToInterrupt(PIN_PIR), pirStatusChanged, CHANGE);
 
 	pinMode(PIN_MORSE_BUZZER, OUTPUT);
-	morsePlayer.Play("MARK");
+	morsePlayer.Play("HELLO");
 	//morsePlayer.Play("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
 }
 
@@ -256,24 +256,53 @@ void changeAlarm(int index) {
 	tonePlayer.Play(Alarms[index].Tones, Alarms[index].Size, true);
 }
 
+bool playRandomMorseCode{ false };
+enum class RepeatMode { Off, Generate, Play, Respond };
+RepeatMode repeatMode{ RepeatMode::Off };
+char repeatCode[2];
+
 void handleCommand(const String& command) {
-	if (command == "1")
-		changeAlarm(0);
-	else if (command == "2")
-		changeAlarm(1);
-	else if (command == "3")
-		changeAlarm(2);
-	else if (command == "4")
-		changeAlarm(3);
-	else if (command == "5")
-		changeAlarm(4);
-	else if (command == "6")
-		changeAlarm(5);
-	else if (command == "E")
-		tonePlayer.Stop();
-	else if (command == "A")
-		morsePlayer.Play("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+
+	if (repeatMode == RepeatMode::Respond) {
+		if (command == "5") {
+			repeatMode = RepeatMode::Off;
+			led.ChangeColour(255, 255, 255);
+		}
+		else {
+			if (strcmp(command.c_str(), repeatCode) == 0) {
+				repeatMode = RepeatMode::Generate;
+			}
+			else {
+				repeatMode = RepeatMode::Play;
+			}
+		}
+	}
+	else {
+		if (command == "1")
+			changeAlarm(0);
+		else if (command == "2")
+			changeAlarm(1);
+		else if (command == "3")
+			changeAlarm(2);
+		else if (command == "4")
+			changeAlarm(3);
+		else if (command == "5")
+			changeAlarm(4);
+		else if (command == "6")
+			changeAlarm(5);
+		else if (command == "E")
+			tonePlayer.Stop();
+		else if (command == "A")
+			morsePlayer.Play("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+		else if (command == "B")
+			playRandomMorseCode = !playRandomMorseCode;
+		else if (command == "R") {
+			repeatMode = RepeatMode::Generate;
+			
+		}
+	}
 }
+
 
 void loop() {
 	auto frameTimeMs{ millis() };
@@ -305,5 +334,33 @@ void loop() {
 
 	led.Update(frameTimeMs);
 	tonePlayer.Update(frameTimeMs);
+
+	
+	static unsigned long lastMorseMs{ 0 };
+	if (playRandomMorseCode && elapsedMs(lastMorseMs, frameTimeMs) > 2500) {
+		lastMorseMs = frameTimeMs;
+
+		static char code[2];
+		
+		auto r = random(26);
+		code[0] = r + 'A';
+		code[1] = '\0';
+		morsePlayer.Play(&code[0]);
+		//playRandomMorseCode = false;
+	}
+
+	if (repeatMode == RepeatMode::Generate) {
+		auto r = random(26);
+		repeatCode[0] = r + 'A';
+		repeatCode[1] = '\0';
+		repeatMode = RepeatMode::Play;
+	}
+	
+	if (repeatMode == RepeatMode::Play) {
+		led.ChangeColour(64, 64, 255);
+		morsePlayer.Play(&repeatCode[0]);
+		repeatMode = RepeatMode::Respond;
+	}
+
 	morsePlayer.Update(frameTimeMs);
 }

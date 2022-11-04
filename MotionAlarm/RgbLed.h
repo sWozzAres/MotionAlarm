@@ -78,6 +78,12 @@ public:
         uint8_t colourValue = cycleMs < HALFCYCLE ? cycleMs * ratio : (CYCLETIME - 1 - cycleMs) * ratio;
         analogWrite(_flashPin, 255 - colourValue);*/
     }
+    void ChangeColour(int redVal, int greenVal, int blueVal) {
+        _redVal = redVal;
+        _greenVal = greenVal;
+        _blueVal = blueVal;
+        WritePinValues();
+    }
 private:
     uint8_t PinFromColour(RgbColour colour) {
         switch (colour) {
@@ -89,12 +95,7 @@ private:
             return _bluePin;
         }
     }
-    void ChangeColour(int redVal, int greenVal, int blueVal) {
-        _redVal = redVal;
-        _greenVal = greenVal;
-        _blueVal = blueVal;
-        WritePinValues();
-    }
+    
     void WritePinValues() {
         analogWrite(_redPin, _redVal);
         analogWrite(_greenPin, _greenVal);
